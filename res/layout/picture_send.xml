@@ -103,6 +103,14 @@
           android:layout_margin="3dp"
           android:padding="3dp"
           android:src="@android:drawable/ic_menu_rotate" />
+         <!-- クリアボタン -->
+    <Button
+      android:id="@+id/btn_clear"
+      android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_margin="3dp"
+          android:padding="3dp"
+      android:drawableLeft="@android:drawable/ic_menu_delete" />
 
       </LinearLayout>
     </TableRow>
@@ -114,14 +122,7 @@
     android:layout_marginTop="20dp"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content">
-    <!-- クリアボタン -->
-    <Button
-      android:id="@+id/btn_clear"
-      android:text="@string/clear_label"
-      android:layout_width="110dp"
-      android:layout_height="wrap_content"
-      android:padding="1dp"
-      android:drawableLeft="@android:drawable/ic_menu_delete" />
+
     <!-- 送信ボタン -->
     <Button
       android:id="@+id/btn_send"
@@ -138,6 +139,15 @@
       android:layout_height="wrap_content"
       android:padding="1dp"
       android:drawableLeft="@android:drawable/ic_menu_send"/>
+
+    <!-- 画像検索ボタン -->
+    <Button
+      android:id="@+id/btn_search_img"
+      android:text="@string/btn_search_img"
+      android:layout_width="100dp"
+      android:layout_height="wrap_content"
+      android:padding="1dp"
+      android:drawableLeft="@android:drawable/ic_menu_search"/>
 
   </LinearLayout>
 </LinearLayout>

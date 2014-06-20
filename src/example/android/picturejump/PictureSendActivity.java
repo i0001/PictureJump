@@ -1,11 +1,15 @@
 package example.android.picturejump;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
@@ -16,9 +20,11 @@ import example.android.bluetooth.PictureSendJob;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.app.SearchManager;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
@@ -151,20 +157,70 @@ public class PictureSendActivity extends Activity {
 			// onClickメソッド(クリックイベント)
 			@Override
 			public void onClick(View v) {
-
-			// インテントにアクション及び送信情報をセット
-			Uri uri = Uri.parse("mailto:");
-			Intent intent = new Intent(Intent.ACTION_SENDTO, uri);
-			intent.putExtra("sms_body", "写真送るよー");
-
-			// 画像を添付
-			intent.putExtra(Intent.EXTRA_STREAM, Uri.parse(getExternalSdCardPath()));
-
-		// メール起動
-		startActivity(intent);
+			//Gmail送信処理
+			mailto();
 
 			}
+			//メール送信メソッド
+			private void mailto() {
+				// 画像をSDカードへ保存
+				String imgPath = saveImgSDcard();
+
+				// インテントにアクション及び送信情報をセット
+				Uri uri = Uri.parse("mailto:");
+				Intent intent = new Intent(Intent.ACTION_SENDTO, uri);
+
+				// 画像を添付
+				intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(imgPath)));
+
+			// メール起動
+			startActivity(intent);
+			}
+
+			//SDカード保存メソッド
+			private String saveImgSDcard() {
+				// SDカードのルートディレクトリ取得
+				String dir = Environment.getExternalStorageDirectory().getAbsolutePath();
+				File baseDir = new File(dir, "picture_send");
+				baseDir.mkdirs();
+				// 画像パス(日付形式)
+				Calendar cal = Calendar.getInstance();
+				SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd_HHmmss");
+				String imgPath = baseDir + File.separator + format.format(cal.getTime()) + ".png";
+				// 画像をバイト型に変換
+				try {
+					ByteArrayOutputStream os = new ByteArrayOutputStream();
+					picture.compress(CompressFormat.PNG, 100, os);
+					os.flush();
+					byte[] w = os.toByteArray();
+					os.close();
+					// 画像を一時的にSDカードに保存
+					FileOutputStream out = new FileOutputStream(imgPath);
+					out.write(w, 0, w.length);
+					out.flush();
+				} catch (Exception e) {
+					Log.e("error", "image error");
+				}
+
+				return imgPath;
+			}
 			});
+
+		// 検索ボタンにリスナー設定
+		Button searchImg = (Button) findViewById(R.id.btn_search_img);
+		searchImg.setOnClickListener(new OnClickListener() {
+			// onClickメソッド(クリックイベント)
+			@Override
+			public void onClick(View v) {
+
+
+		Intent intent = new Intent();
+		intent.setAction(Intent.ACTION_WEB_SEARCH);
+		intent.putExtra(SearchManager.QUERY,"keyword");
+		startActivity(intent);
+			}
+		});
+
 
 
 		// ボタンの使用可能状態を更新
@@ -355,85 +411,5 @@ public class PictureSendActivity extends Activity {
 		if (progressDialog != null) {
 			progressDialog.setProgress(value);
 		}
-	}
-
-	/**
-	 * 外部SDカードのパスを取得する
-	 *
-	 * @return external SD card path, or null
-	 */
-	public static String getExternalSdCardPath(){
-	    HashSet<String> paths = new HashSet<String>();
-	    Scanner scanner = null;
-	    try{
-	        // システム設定ファイルを読み込み
-	        File vold_fstab = new File("/system/etc/vold.fstab");
-	        scanner = new Scanner(new FileInputStream(vold_fstab));
-	        while(scanner.hasNextLine()){
-	            String line = scanner.nextLine();
-	            // dev_mountまたはfuse_mountで始まる行
-	            if(line.startsWith("dev_mount") || line.startsWith("fuse_mount")){
-	                // 半角スペースではなくタブで区切られている機種もあるらしい
-	                // 半角スペース区切り３つめ（path）を取得
-	                String path = line.replaceAll("\t", " ").split(" ")[2];
-	                paths.add(path);
-	            }
-	        }
-	    }catch(FileNotFoundException e){
-	        e.printStackTrace();
-	        return null;
-	    }finally{
-	        if(scanner != null){
-	            scanner.close();
-	        }
-	    }
-	    // Environment.getExternalStorageDirectory() が内部SDを返す場合は除外
-	    if(!Environment.isExternalStorageRemovable()){
-	        paths.remove(Environment.getExternalStorageDirectory().getPath());
-	    }
-	    // マウントされているSDカードのパスを追加
-	    List<String> mountSdCardPaths = new ArrayList<String>();
-	    for(String path : paths){
-	        if(isMounted(path)){
-	            mountSdCardPaths.add(path);
-	        }
-	    }
-	    // マウントされているSDカードのパス
-	    String mountSdCardPath = null;
-	    if(mountSdCardPaths.size() > 0){
-	        mountSdCardPath = mountSdCardPaths.get(0);
-	    }
-	    return mountSdCardPath;
-
-	}
-
-	/**
-	 * パスがマウントされているSDカードのパスかチェックする
-	 *
-	 * @param path SD card path
-	 * @return true if path is the mounted SD card's path, otherwise false
-	 */
-	public static boolean isMounted(String path){
-	    boolean isMounted = false;
-	    Scanner scanner = null;
-	    try{
-	        // マウントポイントを取得する
-	        File mounts = new File("/proc/mounts");
-	        scanner = new Scanner(new FileInputStream(mounts));
-	        while(scanner.hasNextLine()){
-	            if(scanner.nextLine().contains(path)){
-	                isMounted = true;
-	                break;
-	            }
-	        }
-	    }catch(FileNotFoundException e){
-	        e.printStackTrace();
-	        return false;
-	    }finally{
-	        if(scanner != null){
-	            scanner.close();
-	        }
-	    }
-	    return isMounted;
 	}
 }

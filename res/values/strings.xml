@@ -40,6 +40,7 @@
   <string name="picture_save_succeed">SDカードに画像を保存しました</string>
   <string name="picture_save_failed">画像保存に失敗しました</string>
   <string name="camera_open_failed">カメラ起動に失敗しました</string>
+  <string name="btn_search_img">検索</string>
 
 
 </resources>
